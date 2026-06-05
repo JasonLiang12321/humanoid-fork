@@ -8,6 +8,7 @@ WORKDIR ${AMENT_WS}/src
 # Copy in source code 
 COPY autonomy/perception perception
 COPY autonomy/wato_msgs/common_msgs wato_msgs/common_msgs
+COPY autonomy/perception/perception/TrackNetV3-fork /opt/TrackNetV3
 
 # Install rosdep if not present, update package lists
 RUN apt-get update && \
@@ -44,41 +45,41 @@ RUN apt-get -qq autoremove -y && apt-get -qq autoclean && apt-get -qq clean && \
 # Essential build & Python tooling
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      build-essential \
-      git \
-      cmake \
-      ninja-build \
-      python3 \
-      python3-pip \
-      python3-dev \
-      python3-setuptools \
-      curl \
-      ca-certificates \
-      gnupg2 \
-      libgl1-mesa-glx \
-      lsb-release \
-      libssl-dev \
-      usbutils \
-      libusb-1.0-0-dev \
-      pkg-config \
-      libgtk-3-dev
+    build-essential \
+    git \
+    cmake \
+    ninja-build \
+    python3 \
+    python3-pip \
+    python3-dev \
+    python3-setuptools \
+    curl \
+    ca-certificates \
+    gnupg2 \
+    libgl1-mesa-glx \
+    lsb-release \
+    libssl-dev \
+    usbutils \
+    libusb-1.0-0-dev \
+    pkg-config \
+    libgtk-3-dev
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      ros-$ROS_DISTRO-librealsense2* \
-      ros-$ROS_DISTRO-realsense2-camera* && \
-      rm -rf /var/lib/apt/lists/*
+    ros-$ROS_DISTRO-librealsense2* \
+    ros-$ROS_DISTRO-realsense2-camera* && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m pip install --upgrade pip
 
 RUN python3 -m pip install --no-cache-dir \
-      pccm>=0.4.16 \
-      ccimport>=0.4.4 \
-      pybind11>=2.6.0 \
-      cv_bridge \
-      numpy \
-      fire \
-      opencv-python
+    pccm>=0.4.16 \
+    ccimport>=0.4.4 \
+    pybind11>=2.6.0 \
+    cv_bridge \
+    numpy \
+    fire \
+    opencv-python
 
 # Dependency Cleanup
 WORKDIR /
@@ -94,8 +95,8 @@ WORKDIR ${AMENT_WS}
 
 RUN . /opt/ros/$ROS_DISTRO/setup.sh && \
     colcon build \
-        --cmake-args -DCMAKE_BUILD_TYPE=Release \
-        --install-base ${WATONOMOUS_INSTALL}
+    --cmake-args -DCMAKE_BUILD_TYPE=Release \
+    --install-base ${WATONOMOUS_INSTALL}
 
 # Source and Build Artifact Cleanup 
 RUN rm -rf build/* devel/* install/* log/*
