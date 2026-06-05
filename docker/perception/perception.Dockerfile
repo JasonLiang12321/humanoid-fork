@@ -62,7 +62,21 @@ RUN apt-get update && \
     usbutils \
     libusb-1.0-0-dev \
     pkg-config \
-    libgtk-3-dev
+    libgtk-3-dev \
+# pyenv build dependencies
+    zlib1g-dev \
+    libbz2-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    wget \
+    llvm \
+    libncursesw5-dev \
+    xz-utils \
+    tk-dev \
+    libxml2-dev \
+    libxmlsec1-dev \
+    libffi-dev \
+    liblzma-dev
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -98,6 +112,24 @@ RUN . /opt/ros/$ROS_DISTRO/setup.sh && \
     colcon build \
     --cmake-args -DCMAKE_BUILD_TYPE=Release \
     --install-base ${WATONOMOUS_INSTALL}
+
+# Install pyenv and Python 3.8.7, create venv for TrackNet and install requirements
+RUN set -eux; \
+    export PYENV_ROOT="/root/.pyenv"; export PATH="$PYENV_ROOT/bin:$PATH"; \
+    curl -s https://pyenv.run | bash; \
+    # Initialize pyenv (best-effort)
+    export PATH="$PYENV_ROOT/bin:$PATH"; eval "$(/root/.pyenv/bin/pyenv init -)" || true; \
+    /root/.pyenv/bin/pyenv install -v 3.8.7; \
+    /root/.pyenv/bin/pyenv global 3.8.7; \
+    /root/.pyenv/versions/3.8.7/bin/python -m pip install --upgrade pip setuptools wheel; \
+    if [ -d "/opt/TrackNetV3" ]; then \
+    /root/.pyenv/versions/3.8.7/bin/python -m venv /opt/TrackNetV3/venv; \
+    /opt/TrackNetV3/venv/bin/pip install --upgrade pip setuptools wheel; \
+    /opt/TrackNetV3/venv/bin/pip install torch==1.10.0+cpu torchvision==0.11.1+cpu -f https://download.pytorch.org/whl/torch_stable.html || true; \
+    if [ -f /opt/TrackNetV3/requirements.txt ]; then \
+    /opt/TrackNetV3/venv/bin/pip install --no-cache-dir -r /opt/TrackNetV3/requirements.txt || true; \
+    fi; \
+    fi
 
 # Source and Build Artifact Cleanup 
 RUN rm -rf build/* devel/* install/* log/*
