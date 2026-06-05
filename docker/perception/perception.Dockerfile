@@ -89,6 +89,7 @@ RUN apt-get -qq autoremove -y && apt-get -qq autoclean && apt-get -qq clean && \
 ################################ Build ################################
 FROM dependencies AS build
 COPY --from=source ${AMENT_WS}/src ${AMENT_WS}/src
+COPY --from=source /opt/TrackNetV3 /opt/TrackNetV3
 
 # Build ROS2 packages
 WORKDIR ${AMENT_WS}
