@@ -15,18 +15,19 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-    profiles: [deploy]
+    profiles: [ deploy ]
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              capabilities: [gpu]
+              capabilities: [ gpu ]
     devices:
       - /dev/bus/usb:/dev/bus/usb
     privileged: true
     volumes:
       - ${MONO_DIR}/autonomy/perception:/root/ament_ws/src/perception
+      - ${MONO_DIR}/autonomy/perception/perception/TrackNetV3-fork:/opt/TrackNetV3:ro
     command: /bin/bash -c "ros2 launch perception perception.launch.py"
 
   perception_dev:
@@ -36,7 +37,7 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-    profiles: [develop]
+    profiles: [ develop ]
     privileged: true
     devices:
       - /dev/bus/usb:/dev/bus/usb
