@@ -10,38 +10,55 @@ services:
         - "${PERCEPTION_IMAGE:?}:main"
       args:
         BASE_IMAGE: ${BASE_IMAGE_OVERRIDE-}
+
     image: "${PERCEPTION_IMAGE:?}:${TAG}"
-    runtime: nvidia
+
+    # ✅ MODERN GPU ACCESS (FIXED)
+    gpus: all
+
     environment:
-      - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
     profiles: [ deploy ]
+
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
               capabilities: [ gpu ]
+
     devices:
       - /dev/bus/usb:/dev/bus/usb
+
     privileged: true
+
     volumes:
       - ${MONO_DIR}/autonomy/perception:/root/ament_ws/src/perception
       - ${MONO_DIR}/autonomy/perception/perception/TrackNetV3-fork:/opt/TrackNetV3:ro
+
     command: /bin/bash -c "ros2 launch perception perception.launch.py"
+
 
   perception_dev:
     build: *perception_build
+
     image: "${PERCEPTION_IMAGE:?}:dev_${TAG}"
-    runtime: nvidia
+
+    # ✅ MODERN GPU ACCESS (FIXED)
+    gpus: all
+
     environment:
-      - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
     profiles: [ develop ]
+
     privileged: true
+
     devices:
       - /dev/bus/usb:/dev/bus/usb
+
     volumes:
       - ${MONO_DIR}/autonomy/perception:/root/ament_ws/src/perception
+
     command: /bin/bash -c "ros2 launch perception perception.launch.py"
-    # command: tail -f /dev/null
