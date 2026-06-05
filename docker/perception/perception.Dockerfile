@@ -1,6 +1,6 @@
 ARG BASE_IMAGE=ghcr.io/watonomous/robot_base/base:humble-ubuntu22.04
 
-################################ Source ################################
+################################ SOURCE ################################
 FROM ${BASE_IMAGE} AS source
 
 WORKDIR ${AMENT_WS}/src
@@ -9,10 +9,9 @@ COPY autonomy/perception perception
 COPY autonomy/wato_msgs/common_msgs wato_msgs/common_msgs
 COPY autonomy/perception/perception/TrackNetV3-fork /opt/TrackNetV3
 
-################################ Dependencies ################################
+################################ DEPENDENCIES ################################
 FROM ${BASE_IMAGE} AS dependencies
 
-# System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential git cmake ninja-build curl ca-certificates \
     python3 python3-pip python3-dev python3-setuptools \
@@ -22,42 +21,43 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libncursesw5-dev xz-utils tk-dev wget llvm \
     && rm -rf /var/lib/apt/lists/*
 
-# ROS / GPU deps (keep your existing ones if needed)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-$ROS_DISTRO-librealsense2* \
     ros-$ROS_DISTRO-realsense2-camera* \
     && rm -rf /var/lib/apt/lists/*
 
-################################ PYENV SETUP ################################
+# ✅ FIX 1: ROS Python compatibility (CRITICAL)
+RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install empy==3.3.4
+RUN python3 -m pip install numpy==1.24.4
+
+################################ PYENV + TRACKNET ENV ################################
 ENV PYENV_ROOT="/root/.pyenv"
 ENV PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
 
 RUN curl https://pyenv.run | bash
 
-# Install Python 3.8.7
 RUN bash -lc "\
     export PYENV_ROOT=/root/.pyenv && \
     export PATH=$PYENV_ROOT/bin:$PATH && \
     eval \"\$(pyenv init -)\" || true && \
     pyenv install -s 3.8.7 && \
-    pyenv global 3.8.7 && \
-    python -V"
+    pyenv global 3.8.7"
 
-################################ TRACKNET VENV ################################
-
-# Create isolated venv (IMPORTANT: NOT inside /opt mounted folder)
+# ✅ FIX 2: isolate TrackNet env cleanly
 RUN bash -lc "\
     /root/.pyenv/versions/3.8.7/bin/python -m venv /root/tracknet_env && \
     /root/tracknet_env/bin/pip install --upgrade pip setuptools wheel"
 
-# Install PyTorch CPU/GPU-safe fallback (edit if you need CUDA)
+# PyTorch (keep CPU/GPU flexible)
 RUN /root/tracknet_env/bin/pip install \
     torch==1.10.0 torchvision==0.11.1 \
     -f https://download.pytorch.org/whl/torch_stable.html || true
 
-# Install TrackNet requirements
-RUN /root/tracknet_env/bin/pip install numpy opencv-python tqdm
+# Base deps for TrackNet
+RUN /root/tracknet_env/bin/pip install numpy==1.24.4 opencv-python tqdm
 
+################################ TRACKNET COPY ################################
 COPY autonomy/perception/perception/TrackNetV3-fork /opt/TrackNetV3
 
 RUN if [ -f /opt/TrackNetV3/requirements.txt ]; then \
@@ -70,6 +70,10 @@ FROM dependencies AS build
 COPY --from=source ${AMENT_WS}/src ${AMENT_WS}/src
 
 WORKDIR ${AMENT_WS}
+
+# ✅ FIX 3: prevent pyenv from breaking ROS build
+ENV PYTHONPATH=/usr/lib/python3/dist-packages
+ENV PATH=/usr/bin:$PATH
 
 RUN . /opt/ros/$ROS_DISTRO/setup.sh && \
     colcon build \
