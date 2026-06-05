@@ -53,12 +53,11 @@ RUN bash -lc "\
     /root/.pyenv/versions/3.8.7/bin/python -m venv /opt/tracknet_env && \
     /opt/tracknet_env/bin/pip install --upgrade pip setuptools wheel"
 
-# PyTorch (adjust CUDA if needed)
-RUN /opt/tracknet_env/bin/pip install \
-    torch==1.10.0 torchvision==0.11.1 \
-    -f https://download.pytorch.org/whl/torch_stable.html || true
-
-RUN /opt/tracknet_env/bin/pip install numpy opencv-python tqdm
+# PyTorch (CUDA 12.1 compatible build)
+RUN /opt/tracknet_env/bin/pip install --upgrade pip && \
+    /opt/tracknet_env/bin/pip install \
+    torch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 \
+    --index-url https://download.pytorch.org/whl/cu121
 
 
 ################################ TRACKNET INSTALL ################################
