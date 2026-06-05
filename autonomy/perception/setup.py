@@ -31,6 +31,7 @@ setup(
     entry_points={
         'console_scripts': [
             'dummy_publisher_node = perception.dummy_publisher_node:main'
+            , 'shuttle_detection_node = perception.shuttle_detection_node:main'
         ],
     },
 )

@@ -25,6 +25,12 @@ def generate_launch_description():
             ]
         ),
         Node(
+            package='perception',
+            executable='shuttle_detection_node',
+            name='shuttle_detection_node',
+            output='screen',
+        ),
+        Node(
             package='realsense2_camera',
             executable='realsense2_camera_node',
             name='realsense_node',
