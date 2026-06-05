@@ -15,6 +15,7 @@ FROM ${BASE_IMAGE} AS dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential git cmake ninja-build curl ca-certificates \
     python3 python3-pip python3-dev python3-setuptools \
+    python3.8 python3.8-venv python3.8-dev \
     libgl1-mesa-glx libglib2.0-0 \
     libbz2-dev libreadline-dev libsqlite3-dev \
     libssl-dev zlib1g-dev libffi-dev liblzma-dev \
@@ -26,42 +27,31 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-$ROS_DISTRO-realsense2-camera* \
     && rm -rf /var/lib/apt/lists/*
 
-# ✅ FIX 1: ROS Python compatibility (CRITICAL)
+################################ ROS PYTHON FIXES ################################
 RUN python3 -m pip install --upgrade pip
 RUN python3 -m pip install empy==3.3.4
-RUN python3 -m pip install numpy==1.24.4
 
-################################ PYENV + TRACKNET ENV ################################
-ENV PYENV_ROOT="/root/.pyenv"
-ENV PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
+################################ TRACKNET VENV (CLEAN) ################################
 
-RUN curl https://pyenv.run | bash
+# Create isolated Python 3.8 environment
+RUN python3.8 -m venv /opt/tracknet_env
 
-RUN bash -lc "\
-    export PYENV_ROOT=/root/.pyenv && \
-    export PATH=$PYENV_ROOT/bin:$PATH && \
-    eval \"\$(pyenv init -)\" || true && \
-    pyenv install -s 3.8.7 && \
-    pyenv global 3.8.7"
+RUN /opt/tracknet_env/bin/pip install --upgrade pip setuptools wheel
 
-# ✅ FIX 2: isolate TrackNet env cleanly
-RUN bash -lc "\
-    /root/.pyenv/versions/3.8.7/bin/python -m venv /root/tracknet_env && \
-    /root/tracknet_env/bin/pip install --upgrade pip setuptools wheel"
-
-# PyTorch (keep CPU/GPU flexible)
-RUN /root/tracknet_env/bin/pip install \
+# PyTorch (IMPORTANT: adjust CUDA if needed)
+RUN /opt/tracknet_env/bin/pip install \
     torch==1.10.0 torchvision==0.11.1 \
     -f https://download.pytorch.org/whl/torch_stable.html || true
 
-# Base deps for TrackNet
-RUN /root/tracknet_env/bin/pip install numpy==1.24.4 opencv-python tqdm
+# Base ML deps
+RUN /opt/tracknet_env/bin/pip install \
+    numpy==1.24.4 opencv-python tqdm
 
-################################ TRACKNET COPY ################################
+################################ TRACKNET INSTALL ################################
 COPY autonomy/perception/perception/TrackNetV3-fork /opt/TrackNetV3
 
 RUN if [ -f /opt/TrackNetV3/requirements.txt ]; then \
-        /root/tracknet_env/bin/pip install -r /opt/TrackNetV3/requirements.txt || true; \
+        /opt/tracknet_env/bin/pip install -r /opt/TrackNetV3/requirements.txt || true; \
     fi
 
 ################################ BUILD ################################
@@ -71,7 +61,7 @@ COPY --from=source ${AMENT_WS}/src ${AMENT_WS}/src
 
 WORKDIR ${AMENT_WS}
 
-# ✅ FIX 3: prevent pyenv from breaking ROS build
+# Ensure ROS uses system python ONLY
 ENV PYTHONPATH=/usr/lib/python3/dist-packages
 ENV PATH=/usr/bin:$PATH
 
