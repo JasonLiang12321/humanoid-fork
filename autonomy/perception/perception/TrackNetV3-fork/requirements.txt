@@ -4,7 +4,7 @@ opencv_python==4.4.0.46
 pandas==2.0.0
 Pillow==10.0.0
 plotly==5.8.2
-torch==1.10.0
+torch==2.1.2+cu121
 parse
 tqdm
 pycocotools
